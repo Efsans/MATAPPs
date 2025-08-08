@@ -1,10 +1,15 @@
 "use client";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Check, ChevronsUpDown, RefreshCw, Trash2 } from "lucide-react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import {
+  Check,
+  ChevronsUpDown,
+  Edit2,
+  Plus,
+  RefreshCw,
+  Trash2,
+} from "lucide-react";
 import { useAction } from "next-safe-action/hooks";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -18,6 +23,12 @@ import {
   MaterialSolidworks,
   updateMaterialSolidworks,
 } from "@/actions/material-bank";
+import {
+  subcreateMaterialSolidworks,
+  subdeleteMaterialSolidworks,
+  subgetMaterialSolidworks,
+  subupdateMaterialSolidworks,
+} from "@/actions/sub-material-bank";
 import { Button } from "@/components/ui/button";
 import {
   Command,
@@ -62,14 +73,11 @@ const formSchema = z.object({
 type FormData = z.infer<typeof formSchema>;
 
 export default function MaterialBanksPage() {
-  const [openBank, setOpenBank] = React.useState(false);
-  const [openLibrary, setOpenLibrary] = React.useState(false);
-
-  const [selectedBankId, setSelectedBankId] = React.useState<string | null>(
-    null,
-  );
-  const [banks, setBanks] = React.useState<MaterialSolidworks[] | null>(null);
-  const [libraries, setLibraries] = React.useState<Library[] | null>(null);
+  const [openLibrary, setOpenLibrary] = useState(false);
+  const [selectedBankId, setSelectedBankId] = useState<string | null>(null);
+  const [banks, setBanks] = useState<MaterialSolidworks[] | null>(null);
+  const [libraries, setLibraries] = useState<Library[] | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -78,6 +86,14 @@ export default function MaterialBanksPage() {
       idBliblioteca: "",
     },
   });
+
+  const onResetForm = () => {
+    form.reset({
+      name: "",
+      idBliblioteca: "",
+    });
+    setSelectedBankId(null);
+  };
 
   const { execute: getBanksAction, status: fetchBanksStatus } = useAction(
     getMaterialSolidworks,
@@ -113,7 +129,7 @@ export default function MaterialBanksPage() {
       },
     });
 
-  React.useEffect(() => {
+  useEffect(() => {
     getBanksAction({});
     getLibrariesAction({});
   }, [getBanksAction, getLibrariesAction]);
@@ -124,10 +140,9 @@ export default function MaterialBanksPage() {
       onSuccess(response) {
         if (response.data?.success) {
           toast.success(response.data.message);
-          form.reset();
-          setSelectedBankId(null);
+          setIsDialogOpen(false);
+          onResetForm();
           getBanksAction({});
-          getLibrariesAction({});
         } else {
           toast.error(response.data?.message || "Erro ao criar.");
         }
@@ -145,10 +160,9 @@ export default function MaterialBanksPage() {
       onSuccess(response) {
         if (response.data?.success) {
           toast.success(response.data.message);
-          form.reset();
-          setSelectedBankId(null);
+          setIsDialogOpen(false);
+          onResetForm();
           getBanksAction({});
-          getLibrariesAction({});
         } else {
           toast.error(response.data?.message || "Erro ao alterar.");
         }
@@ -166,10 +180,9 @@ export default function MaterialBanksPage() {
       onSuccess(response) {
         if (response.data?.success) {
           toast.success(response.data.message);
-          form.reset();
-          setSelectedBankId(null);
+          setIsDialogOpen(false);
+          onResetForm();
           getBanksAction({});
-          getLibrariesAction({});
         } else {
           toast.error(response.data?.message || "Erro ao excluir.");
         }
@@ -181,25 +194,18 @@ export default function MaterialBanksPage() {
     },
   );
 
-  const onSelectBank = (bankId: string) => {
-    setSelectedBankId(bankId);
-    const selected = banks?.find((bank) => bank.id_bank === bankId);
-    if (selected) {
-      form.reset({
-        name: selected.name,
-        idBliblioteca: selected.idBliblioteca,
-      });
-    }
-    setOpenBank(false);
+  const handleEditBank = (bank: MaterialSolidworks) => {
+    setSelectedBankId(bank.id_bank);
+    form.reset({
+      name: bank.name,
+      idBliblioteca: bank.idBliblioteca,
+    });
+    setIsDialogOpen(true);
   };
 
-  const onResetForm = () => {
-    form.reset({
-      id_bank: "",
-      name: "",
-      idBliblioteca: "",
-    });
-    setSelectedBankId(null);
+  const handleCreateBank = () => {
+    onResetForm();
+    setIsDialogOpen(true);
   };
 
   const onSubmit = (values: FormData) => {
@@ -224,220 +230,240 @@ export default function MaterialBanksPage() {
     fetchBanksStatus === "executing" ||
     fetchLibrariesStatus === "executing";
 
-  const handlerefresh = () => {
+  const refreshData = () => {
     getBanksAction({});
     getLibrariesAction({});
   };
 
-  {
-    console.log("array do bancos", banks);
-  }
-
   return (
     <PageContainer>
-      <h1 className="mb-6 text-3xl font-bold">Gerenciar Bancos de Dados</h1>
-
-      <div className="mb-8">
-        <h2 className="mb-4 text-xl font-bold">
-          Alterar ou Excluir Banco de Dados
-        </h2>
-        <div className="flex flex-col space-y-4 md:flex-row md:space-y-0 md:space-x-2">
-          <Popover open={openBank} onOpenChange={setOpenBank}>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                role="combobox"
-                aria-expanded={openBank}
-                className="w-[300px] justify-between"
-                disabled={fetchBanksStatus === "executing" || !banks}
-              >
-                {selectedBankId
-                  ? banks?.find((bank) => bank.id_bank === selectedBankId)?.name
-                  : "Selecione um banco de dados..."}
-                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-[300px] p-0">
-              <Command>
-                <CommandInput placeholder="Buscar banco de dados..." />
-                <CommandEmpty>Nenhum banco de dados encontrado.</CommandEmpty>
-                <CommandGroup>
-                  {banks
-                    ?.filter((bank) => bank.id_bank)
-                    .map((bank) => (
-                      <CommandItem
-                        key={bank.id_bank}
-                        onSelect={() => onSelectBank(bank.id_bank)}
-                      >
-                        <Check
-                          className={cn(
-                            "mr-2 h-4 w-4",
-                            selectedBankId === bank.id_bank
-                              ? "opacity-100"
-                              : "opacity-0",
-                          )}
-                        />
-                        {bank.name}
-                      </CommandItem>
-                    ))}
-                </CommandGroup>
-              </Command>
-            </PopoverContent>
-          </Popover>
-
-          <Dialog>
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="text-3xl font-bold">Gerenciamento de Bancos</h1>
+        <div className="flex gap-2">
+          <Button onClick={refreshData} disabled={isLoading} variant="outline">
+            <RefreshCw className="mr-2 h-4 w-4" /> Atualizar
+          </Button>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button
-                variant="destructive"
-                disabled={!selectedBankId || isLoading}
-              >
-                <Trash2 className="mr-2 h-4 w-4" /> Excluir
+              <Button onClick={handleCreateBank}>
+                <Plus className="mr-2 h-4 w-4" /> Novo Banco
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Você tem certeza?</DialogTitle>
+                <DialogTitle>
+                  {selectedBankId
+                    ? "Alterar Banco de Dados"
+                    : "Cadastrar Banco de Dados"}
+                </DialogTitle>
                 <DialogDescription>
-                  Esta ação não pode ser desfeita. Isso excluirá o banco de
-                  dados{" "}
-                  {banks?.find((bank) => bank.id_bank === selectedBankId)?.name}
-                  .
+                  {selectedBankId
+                    ? "Altere os dados do banco selecionado."
+                    : "Preencha os campos para cadastrar um novo banco."}
                 </DialogDescription>
               </DialogHeader>
-              <DialogFooter>
-                <DialogClose asChild>
-                  <Button type="button" variant="secondary">
-                    Cancelar
-                  </Button>
-                </DialogClose>
-                <DialogClose asChild>
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    onClick={() =>
-                      deleteBankAction({ id_bank: selectedBankId! })
-                    }
-                  >
-                    Confirmar Exclusão
-                  </Button>
-                </DialogClose>
-              </DialogFooter>
+              <Form {...form}>
+                <form
+                  onSubmit={form.handleSubmit(onSubmit)}
+                  className="space-y-4"
+                >
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nome do Banco de Dados</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Digite o nome do banco..."
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="idBliblioteca"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col">
+                        <FormLabel>Biblioteca</FormLabel>
+                        <Popover
+                          open={openLibrary}
+                          onOpenChange={setOpenLibrary}
+                        >
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button
+                                variant="outline"
+                                role="combobox"
+                                className={cn(
+                                  "w-full justify-between",
+                                  !field.value && "text-muted-foreground",
+                                )}
+                                disabled={
+                                  fetchLibrariesStatus === "executing" ||
+                                  !libraries
+                                }
+                              >
+                                {field.value
+                                  ? libraries?.find(
+                                      (lib) => lib.id_lib === field.value,
+                                    )?.name
+                                  : "Selecione uma biblioteca"}
+                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                            <Command>
+                              <CommandInput placeholder="Buscar biblioteca..." />
+                              <CommandEmpty>
+                                Nenhuma biblioteca encontrada.
+                              </CommandEmpty>
+                              <CommandGroup>
+                                {libraries?.map((lib) => (
+                                  <CommandItem
+                                    key={lib.id_lib}
+                                    onSelect={() => {
+                                      form.setValue(
+                                        "idBliblioteca",
+                                        lib.id_lib,
+                                      );
+                                      setOpenLibrary(false);
+                                    }}
+                                    value={lib.name}
+                                  >
+                                    <Check
+                                      className={cn(
+                                        "mr-2 h-4 w-4",
+                                        lib.id_lib === field.value
+                                          ? "opacity-100"
+                                          : "opacity-0",
+                                      )}
+                                    />
+                                    {lib.name}
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </Command>
+                          </PopoverContent>
+                        </Popover>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <div className="mt-6 flex justify-between space-x-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setIsDialogOpen(false)}
+                      className="flex-1"
+                    >
+                      Cancelar
+                    </Button>
+                    <Button
+                      type="submit"
+                      className="flex-1"
+                      disabled={isLoading}
+                    >
+                      {isLoading
+                        ? "Processando..."
+                        : selectedBankId
+                          ? "Alterar"
+                          : "Cadastrar"}
+                    </Button>
+                  </div>
+                </form>
+              </Form>
             </DialogContent>
           </Dialog>
-          {/* botao limpar */}
-          <Button
-            variant="outline"
-            onClick={onResetForm}
-            disabled={!selectedBankId || isLoading}
-          >
-            Limpar
-          </Button>
-
-          <Button
-            variant={"secondary"}
-            onClick={handlerefresh}
-            disabled={isLoading}
-          >
-            <RefreshCw className="ml-2 h-4 w-4" />
-            Atualizar
-          </Button>
         </div>
       </div>
 
-      <div className="bg-card w-full max-w-md rounded-lg border p-6 shadow-lg">
-        <h2 className="mb-6 text-center text-xl font-bold">
-          {selectedBankId
-            ? "Alterar Banco de Dados"
-            : "Cadastrar Banco de Dados"}
-        </h2>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nome do Banco de Dados</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Digite o nome do banco..." {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="idBliblioteca"
-              render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel>Biblioteca</FormLabel>
-                  <Popover open={openLibrary} onOpenChange={setOpenLibrary}>
-                    <PopoverTrigger asChild>
-                      <FormControl>
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {banks && banks.length > 0 ? (
+          banks.map((banco) => {
+            const relatedLibrary = libraries?.find(
+              (lib) => lib.id_lib === banco.idBliblioteca,
+            );
+            return (
+              <div
+                key={banco.id_bank}
+                className="bg-card flex flex-col justify-between rounded-lg border p-6 shadow-md"
+              >
+                <div>
+                  <h2 className="text-primary mb-2 text-xl font-bold">
+                    {banco.name}
+                  </h2>
+                  <p className="text-muted-foreground mb-4 text-sm">
+                    ID: {banco.id_bank}
+                  </p>
+                  {relatedLibrary && (
+                    <div className="mb-4">
+                      <h3 className="text-sm font-semibold">Biblioteca:</h3>
+                      <p className="text-sm text-gray-700">
+                        {relatedLibrary.name}
+                      </p>
+                    </div>
+                  )}
+                  {/* Assumindo que 'banco' tem um array 'subBanks'. Ajuste conforme sua estrutura de dados. */}
+                </div>
+                <div className="mt-4 flex space-x-2">
+                  <Button
+                    onClick={() => handleEditBank(banco)}
+                    variant="outline"
+                    size="sm"
+                    className="flex-1"
+                  >
+                    <Edit2 className="mr-2 h-4 w-4" /> Editar
+                  </Button>
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        className="flex-1"
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" /> Excluir
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Confirmação de Exclusão</DialogTitle>
+                        <DialogDescription>
+                          Tem certeza que deseja excluir o banco **{banco.name}
+                          **? Esta ação não pode ser desfeita.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <DialogFooter>
+                        <DialogClose asChild>
+                          <Button variant="secondary">Cancelar</Button>
+                        </DialogClose>
                         <Button
-                          variant="outline"
-                          role="combobox"
-                          className={cn(
-                            "w-full justify-between",
-                            !field.value && "text-muted-foreground",
-                          )}
-                          disabled={fetchLibrariesStatus === "executing"}
+                          variant="destructive"
+                          onClick={() =>
+                            deleteBankAction({ id_bank: banco.id_bank })
+                          }
+                          disabled={isLoading}
                         >
-                          {field.value
-                            ? libraries?.find(
-                                (lib) => lib.id_lib === field.value,
-                              )?.name
-                            : "Selecione uma biblioteca"}
-                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          Confirmar Exclusão
                         </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-                      <Command>
-                        <CommandInput placeholder="Buscar biblioteca..." />
-                        <CommandEmpty>
-                          Nenhuma biblioteca encontrada.
-                        </CommandEmpty>
-                        <CommandGroup>
-                          {libraries?.map((lib) => (
-                            <CommandItem
-                              key={lib.id_lib}
-                              onSelect={() => {
-                                form.setValue("idBliblioteca", lib.id_lib);
-                                setOpenLibrary(false);
-                              }}
-                              value={lib.name}
-                            >
-                              <Check
-                                className={cn(
-                                  "mr-2 h-4 w-4",
-                                  lib.id_lib === field.value
-                                    ? "opacity-100"
-                                    : "opacity-0",
-                                )}
-                              />
-                              {lib.name}
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading
-                ? "Processando..."
-                : selectedBankId
-                  ? "Alterar"
-                  : "Cadastrar"}
-            </Button>
-          </form>
-        </Form>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              </div>
+            );
+          })
+        ) : (
+          <p className="text-muted-foreground col-span-full text-center">
+            {fetchBanksStatus === "executing"
+              ? "Carregando bancos..."
+              : "Nenhum banco de dados encontrado."}
+          </p>
+        )}
       </div>
     </PageContainer>
   );

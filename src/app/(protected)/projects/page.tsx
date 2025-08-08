@@ -156,6 +156,7 @@ export default function ProjectsPage() {
   );
 
   const onSelectLibrary = (libraryId: string) => {
+    console.log("ID da biblioteca selecionada:", libraryId);
     setSelectedLibraryId(libraryId);
     const selected = libraries?.find((lib) => lib.id === libraryId);
     if (selected) {

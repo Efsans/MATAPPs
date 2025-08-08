@@ -1,7 +1,8 @@
 "use client";
-
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Check, ChevronsUpDown, Trash2 } from "lucide-react";
+import { Check, ChevronsUpDown, RefreshCw, Trash2 } from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useAction } from "next-safe-action/hooks";
 import React from "react";
 import { useForm } from "react-hook-form";
@@ -223,6 +224,15 @@ export default function MaterialBanksPage() {
     fetchBanksStatus === "executing" ||
     fetchLibrariesStatus === "executing";
 
+  const handlerefresh = () => {
+    getBanksAction({});
+    getLibrariesAction({});
+  };
+
+  {
+    console.log("array do bancos", banks);
+  }
+
   return (
     <PageContainer>
       <h1 className="mb-6 text-3xl font-bold">Gerenciar Bancos de Dados</h1>
@@ -252,22 +262,24 @@ export default function MaterialBanksPage() {
                 <CommandInput placeholder="Buscar banco de dados..." />
                 <CommandEmpty>Nenhum banco de dados encontrado.</CommandEmpty>
                 <CommandGroup>
-                  {banks?.map((bank) => (
-                    <CommandItem
-                      key={bank.id_bank}
-                      onSelect={() => onSelectBank(bank.id_bank)}
-                    >
-                      <Check
-                        className={cn(
-                          "mr-2 h-4 w-4",
-                          selectedBankId === bank.id_bank
-                            ? "opacity-100"
-                            : "opacity-0",
-                        )}
-                      />
-                      {bank.name}
-                    </CommandItem>
-                  ))}
+                  {banks
+                    ?.filter((bank) => bank.id_bank)
+                    .map((bank) => (
+                      <CommandItem
+                        key={bank.id_bank}
+                        onSelect={() => onSelectBank(bank.id_bank)}
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            selectedBankId === bank.id_bank
+                              ? "opacity-100"
+                              : "opacity-0",
+                          )}
+                        />
+                        {bank.name}
+                      </CommandItem>
+                    ))}
                 </CommandGroup>
               </Command>
             </PopoverContent>
@@ -312,13 +324,22 @@ export default function MaterialBanksPage() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
-
+          {/* botao limpar */}
           <Button
             variant="outline"
             onClick={onResetForm}
             disabled={!selectedBankId || isLoading}
           >
             Limpar
+          </Button>
+
+          <Button
+            variant={"secondary"}
+            onClick={handlerefresh}
+            disabled={isLoading}
+          >
+            <RefreshCw className="ml-2 h-4 w-4" />
+            Atualizar
           </Button>
         </div>
       </div>

@@ -24,7 +24,7 @@ export const getMaterialSolidworks = actionClient
     }
 
     try {
-      const response = await fetch(apiUrl, { next: { revalidate: 3600 } });
+      const response = await fetch(apiUrl, { next: { revalidate: 0 } });
 
       if (!response.ok) {
         return {
@@ -35,7 +35,7 @@ export const getMaterialSolidworks = actionClient
 
       const data = await response.json();
 
-      if (!data || !Array.isArray(data.$values)) {
+      if (!data || !Array.isArray(data)) {
         return {
           success: false,
           message: "Dados da API em formato inválido.",
@@ -45,7 +45,7 @@ export const getMaterialSolidworks = actionClient
       return {
         success: true,
         message: "Bancos de dados carregados com sucesso.",
-        data: data.$values as MaterialSolidworks[],
+        data: data,
       };
     } catch (error) {
       console.error(error);

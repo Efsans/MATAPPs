@@ -31,7 +31,7 @@ export const getLibraries = actionClient
         headers: {
           "Content-Type": "application/json",
         },
-        next: { revalidate: 3600 },
+        next: { revalidate: 0 },
       });
 
       if (!response.ok) {
@@ -42,21 +42,19 @@ export const getLibraries = actionClient
         };
       }
 
-      const { $values } = await response.json();
+      const data_lib = await response.json();
 
-      if (!Array.isArray($values)) {
+      if (!Array.isArray(data_lib)) {
         return {
           success: false,
           message: "Dados da API de bibliotecas em formato inválido.",
         };
       }
 
-      const libraries = $values as Library[];
-
       return {
         success: true,
         message: "Bibliotecas carregadas com sucesso!",
-        data: libraries,
+        data: data_lib,
       };
     } catch (error) {
       console.error("Erro ao carregar bibliotecas:", error);

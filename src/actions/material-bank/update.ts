@@ -31,7 +31,7 @@ export const updateMaterialSolidworks = actionClient
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ name, idBliblioteca }),
+        body: JSON.stringify({ name, idBliblioteca, id_bank }),
       });
 
       if (!response.ok) {

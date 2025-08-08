@@ -1,3 +1,4 @@
+// src/actions/get-libraries/index.ts
 "use server";
 
 import { revalidateTag } from "next/cache";
@@ -5,14 +6,13 @@ import { createSafeActionClient } from "next-safe-action";
 
 const actionClient = createSafeActionClient();
 
-// ✅ CORREÇÃO: Definimos uma interface para o formato de retorno da nossa API
+// ✅ As interfaces estão corretas
 interface LibraryApiResponse {
   id_lib: string;
   name: string;
   materiaisSolidWorks: null;
 }
 
-// ✅ CORREÇÃO: Definimos um tipo para o nosso objeto `Library` processado
 interface Library {
   id: string;
   name: string;
@@ -20,7 +20,7 @@ interface Library {
 
 export const getLibraries = actionClient.action(async () => {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL_B;
-  // ... (lógica de verificação da API_URL) ...
+
   if (!apiUrl) {
     console.error("Erro de configuração: NEXT_PUBLIC_API_URL_B não definida.");
     return {
@@ -35,7 +35,7 @@ export const getLibraries = actionClient.action(async () => {
       headers: {
         "Content-Type": "application/json",
       },
-      next: { tags: ["libraries"] },
+      next: { tags: ["libraries"], revalidate: 0 },
     });
 
     if (!response.ok) {
@@ -47,15 +47,23 @@ export const getLibraries = actionClient.action(async () => {
       };
     }
 
-    const { $values } = await response.json();
+    const librariesData = await response.json();
 
-    // ✅ CORREÇÃO: Usamos a interface correta na função de map
-    const libraries: Library[] = $values.map((lib: LibraryApiResponse) => ({
-      id: lib.id_lib,
-      name: lib.name,
-    }));
+    if (!Array.isArray(librariesData)) {
+      return {
+        success: false,
+        message: "Dados da API em formato inválido.",
+      };
+    }
 
-    // ✅ CORREÇÃO: Garantimos que o retorno da ação tenha o tipo correto
+    // ✅ CORREÇÃO: Mapeamos o array de retorno da API para a interface `Library`
+    const libraries: Library[] = librariesData.map(
+      (lib: LibraryApiResponse) => ({
+        id: lib.id_lib,
+        name: lib.name,
+      }),
+    );
+
     return {
       success: true,
       message: "Bibliotecas carregadas com sucesso!",

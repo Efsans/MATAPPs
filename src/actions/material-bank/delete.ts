@@ -6,7 +6,7 @@ import { z } from "zod";
 const actionClient = createSafeActionClient();
 
 const deleteSchema = z.object({
-  id_bank: z.string(),
+  id_bank: z.string().min(1),
 });
 
 export const deleteMaterialSolidworks = actionClient
@@ -29,9 +29,10 @@ export const deleteMaterialSolidworks = actionClient
       });
 
       if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
         return {
           success: false,
-          message: "Falha ao excluir o banco de dados.",
+          message: error?.message || "Falha ao excluir o banco de dados.",
         };
       }
 

@@ -7,20 +7,22 @@ const actionClient = createSafeActionClient();
 
 const createSchema = z.object({
   name: z.string().min(1, { message: "O nome é obrigatório." }),
-  idBliblioteca: z.string().min(1, { message: "A biblioteca é obrigatória." }),
+  idMaterialSolidWorks: z
+    .string()
+    .min(1, { message: "O banco de dados é obrigatório." }),
 });
 
-export const subcreateMaterialSolidworks = actionClient
+export const createSubMaterialSolidworks = actionClient
   .schema(createSchema)
   .action(async ({ parsedInput }) => {
-    const { name, idBliblioteca } = parsedInput;
+    const { name, idMaterialSolidWorks } = parsedInput;
 
     const apiUrl = process.env.NEXT_PUBLIC_API_URL_SD;
 
     if (!apiUrl) {
       return {
         success: false,
-        message: "URL da API de bancos de dados não definida.",
+        message: "URL da API de sub-bancos não definida.",
       };
     }
 
@@ -30,19 +32,19 @@ export const subcreateMaterialSolidworks = actionClient
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ name, idBliblioteca }),
+        body: JSON.stringify({ name, idMaterialSolidWorks }),
       });
 
       if (!response.ok) {
         return {
           success: false,
-          message: "Falha ao criar o banco de dados.",
+          message: "Falha ao criar o sub-banco.",
         };
       }
 
       return {
         success: true,
-        message: "Banco de dados criado com sucesso.",
+        message: "Sub-banco criado com sucesso.",
       };
     } catch (error) {
       console.error(error);

@@ -6,20 +6,20 @@ import { z } from "zod";
 const actionClient = createSafeActionClient();
 
 const deleteSchema = z.object({
-  id_bank: z.string().min(1),
+  id: z.string().min(1),
 });
 
-export const subdeleteMaterialSolidworks = actionClient
+export const deleteSubMaterialSolidworks = actionClient
   .schema(deleteSchema)
   .action(async ({ parsedInput }) => {
-    const { id_bank } = parsedInput;
+    const { id } = parsedInput;
 
-    const apiUrl = `${process.env.NEXT_PUBLIC_API_URL_SD}/${id_bank}`;
+    const apiUrl = `${process.env.NEXT_PUBLIC_API_URL_SD}/${id}`;
 
     if (!apiUrl) {
       return {
         success: false,
-        message: "URL da API de bancos de dados não definida.",
+        message: "URL da API de sub-bancos não definida.",
       };
     }
 
@@ -32,13 +32,13 @@ export const subdeleteMaterialSolidworks = actionClient
         const error = await response.json().catch(() => ({}));
         return {
           success: false,
-          message: error?.message || "Falha ao excluir o banco de dados.",
+          message: error?.message || "Falha ao excluir o sub-banco.",
         };
       }
 
       return {
         success: true,
-        message: "Banco de dados excluído com sucesso.",
+        message: "Sub-banco excluído com sucesso.",
       };
     } catch (error) {
       console.error(error);

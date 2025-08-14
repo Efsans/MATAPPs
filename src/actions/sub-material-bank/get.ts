@@ -5,13 +5,14 @@ import { z } from "zod";
 
 const actionClient = createSafeActionClient();
 
-export interface MaterialSolidworks {
-  id_bank: string;
+export interface SubbMaterialSolidworks {
+  id_sub: string;
+  idMaterialSolidWorks: string;
   name: string;
-  idBliblioteca: string;
+  descricao: string;
 }
 
-export const subgetMaterialSolidworks = actionClient
+export const getSubMaterialSolidworks = actionClient
   .schema(z.object({}))
   .action(async () => {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL_SD;
@@ -19,7 +20,7 @@ export const subgetMaterialSolidworks = actionClient
     if (!apiUrl) {
       return {
         success: false,
-        message: "URL da API de bancos de dados não definida.",
+        message: "URL da API de sub-bancos não definida.",
       };
     }
 
@@ -29,7 +30,7 @@ export const subgetMaterialSolidworks = actionClient
       if (!response.ok) {
         return {
           success: false,
-          message: "Falha ao carregar a lista de bancos de dados.",
+          message: "Falha ao carregar a lista de sub-bancos.",
         };
       }
 
@@ -44,7 +45,7 @@ export const subgetMaterialSolidworks = actionClient
 
       return {
         success: true,
-        message: "Bancos de dados carregados com sucesso.",
+        message: "Sub-bancos carregados com sucesso.",
         data: data,
       };
     } catch (error) {

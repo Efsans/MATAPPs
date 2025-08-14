@@ -6,22 +6,24 @@ import { z } from "zod";
 const actionClient = createSafeActionClient();
 
 const updateSchema = z.object({
-  id_bank: z.string(),
+  id_sub: z.string(),
   name: z.string().min(1, { message: "O nome é obrigatório." }),
-  idBliblioteca: z.string().min(1, { message: "A biblioteca é obrigatória." }),
+  idMaterialSolidWorks: z
+    .string()
+    .min(1, { message: "O banco de dados é obrigatório." }),
 });
 
-export const subupdateMaterialSolidworks = actionClient
+export const updateSubMaterialSolidworks = actionClient
   .schema(updateSchema)
   .action(async ({ parsedInput }) => {
-    const { id_bank, name, idBliblioteca } = parsedInput;
+    const { id_sub, name, idMaterialSolidWorks } = parsedInput;
 
-    const apiUrl = `${process.env.NEXT_PUBLIC_API_URL_SD}/${id_bank}`;
+    const apiUrl = `${process.env.NEXT_PUBLIC_API_URL_SD}/${id_sub}`;
 
     if (!apiUrl) {
       return {
         success: false,
-        message: "URL da API de bancos de dados não definida.",
+        message: "URL da API de sub-bancos não definida.",
       };
     }
 
@@ -31,19 +33,19 @@ export const subupdateMaterialSolidworks = actionClient
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ name, idBliblioteca, id_bank }),
+        body: JSON.stringify({ id_sub, name, idMaterialSolidWorks }),
       });
 
       if (!response.ok) {
         return {
           success: false,
-          message: "Falha ao atualizar o banco de dados.",
+          message: "Falha ao atualizar o sub-banco.",
         };
       }
 
       return {
         success: true,
-        message: "Banco de dados atualizado com sucesso.",
+        message: "Sub-banco atualizado com sucesso.",
       };
     } catch (error) {
       console.error(error);
